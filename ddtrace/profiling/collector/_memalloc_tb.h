@@ -49,6 +49,9 @@ traceback_free(traceback_t* tb);
 traceback_t*
 memalloc_get_traceback(uint16_t max_nframe, void* ptr, size_t size);
 
+PyObject*
+traceback_to_tuple(traceback_t* tb);
+
 DO_ARRAY(traceback_t *, traceback, uint16_t, traceback_free)
 
 /* The maximum number of events we can store in `traceback_array_t.count` */

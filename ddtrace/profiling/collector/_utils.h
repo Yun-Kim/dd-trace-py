@@ -4,6 +4,8 @@
 #include <Python.h>
 #include <stdlib.h>
 
+#define DO_NOTHING(...)
+
 #define p_new(type, count) PyMem_RawMalloc(sizeof(type) * (count))
 #define p_delete(mem_p) PyMem_Free(mem_p);
 #define p_alloc_nr(x) (((x) + 16) * 3 / 2)
