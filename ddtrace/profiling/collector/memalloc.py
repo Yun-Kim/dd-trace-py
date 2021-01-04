@@ -47,7 +47,7 @@ class MemoryCollector(collector.PeriodicCollector):
 
     _DEFAULT_MAX_EVENTS = 32
     _DEFAULT_INTERVAL = 0.5
-    _DEFAULT_HEAP_SAMPLE_SIZE = 512 * 1024
+    _DEFAULT_HEAP_SAMPLE_SIZE = 128 * 1024
 
     # Arbitrary interval to empty the _memalloc event buffer
     _interval = attr.ib(default=_DEFAULT_INTERVAL, repr=False)
