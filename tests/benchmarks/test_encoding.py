@@ -77,3 +77,24 @@ def test_join_encoded_custom(benchmark):
     benchmark(
         trace_encoder.join_encoded, [trace_encoder.encode_trace(trace_large), trace_encoder.encode_trace(trace_small)]
     )
+
+
+from tests.utils import DummyTracer
+
+
+@pytest.mark.benchmark(group="encoding.dd_origin", min_time=0.005)
+def test_dd_origin_propagation(benchmark):
+    def trace_scenario(tracer):
+        with tracer.trace("Root") as root_span:
+            root_span.context.dd_origin = "ciapp-test"
+            for _ in range(999):
+                with tracer.trace(""):
+                    pass
+    tracer = DummyTracer()
+    benchmark(trace_scenario, tracer)
+
+    spans = tracer.writer.pop()
+    encoded_spans = tracer.writer.msgpack_encoder.encode_trace(spans)
+    decoded_spans = tracer.writer.msgpack_encoder._decode(encoded_spans)
+    for span in decoded_spans:
+        assert span[b"meta"][b"_dd.origin"] == b"ciapp-test"

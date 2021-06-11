@@ -148,17 +148,21 @@ cdef class Packer(object):
 
         raise TypeError("Unhandled text type: %r" % type(text))
 
-    cdef inline int _pack_meta(self, object meta):
+    cdef inline int _pack_meta(self, object meta, object dd_origin):
         cdef Py_ssize_t L
         cdef int ret
         cdef dict d
 
-        if meta is None:
+        if meta is None and dd_origin is None:
             ret = msgpack_pack_nil(&self.pk)
 
         if PyDict_CheckExact(meta):
             d = <dict> meta
             L = len(d)
+
+            if dd_origin is not None:
+                L += 1
+
             if L > ITEM_LIMIT:
                 raise ValueError("dict is too large")
 
@@ -169,6 +173,10 @@ cdef class Packer(object):
                     if ret != 0: break
                     ret = self._pack_text(v)
                     if ret != 0: break
+                if dd_origin is not None:
+                    ret = self._pack_text("_dd.origin")
+                    if ret == 0:
+                        ret = self._pack_text(dd_origin)
             return ret
 
         raise TypeError("Unhandled meta type: %r" % type(meta))
@@ -206,7 +214,7 @@ cdef class Packer(object):
         cdef int has_metrics
 
         has_span_type = <bint> (span.span_type is not None)
-        has_meta = <bint> (len(span.meta) > 0)
+        has_meta = <bint> (len(span.meta) > 0 or span.context is not None and span.context.dd_origin is not None)
         has_metrics = <bint> (len(span.metrics) > 0)
 
         L = 9 + has_span_type + has_meta + has_metrics
@@ -268,7 +276,10 @@ cdef class Packer(object):
             if has_meta:
                 ret = pack_bytes(&self.pk, <char *> b"meta", 4)
                 if ret != 0: return ret
-                ret = self._pack_meta(span.meta)
+                if span.context is not None and span.context.dd_origin is not None:
+                    ret = self._pack_meta(span.meta, span.context.dd_origin)
+                else:
+                    ret = self._pack_meta(span.meta, None)
                 if ret != 0: return ret
 
             if has_metrics:
